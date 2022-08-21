@@ -102,10 +102,10 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   version_string(infobuf);
   mexPrintf("%s",infobuf);
   
-  if ((nrhs != 18) || ((nlhs != 5) && (nlhs != 6)))
+  if ((nrhs != 20) || ((nlhs != 8) && (nlhs != 9)))
   {
     mexPrintf("nrhs %i nlhs %i", nrhs, nlhs);
-    mexErrMsgTxt("Syntax:\n [vsol, bsol, ebsol, simulationtime, rnseed, [HN]] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLNormal, BCn, mua, mus, g, n, f, phase0, Nphoton, disablepbar, rnseed)\n");
+    mexErrMsgTxt("Syntax:\n [vsol, bsol, ebsol, R_vsol, R_bsol, R_ebsol, simulationtime, rnseed, [HN]] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLNormal, BCn, mua, mus, g, n, f, phase0, Nphoton, NBin3Dtheta, NBin3Dphi, disablepbar, rnseed)\n");
   }
   mexPrintf("Initializing MC3D...\n");
   
@@ -115,6 +115,8 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   Array<char> BCType, BCLightDirectionType;
   Array<double> BCLNormal, BCn, f, BCIntensity;
   Array<int_fast64_t> Nphoton;
+  Array<int_fast64_t> NBin3Dtheta;
+  Array<int_fast64_t> NBin3Dphi;
   Array<double> GaussianSigma;
   Array<int_fast64_t> disable_pbar;
   Array<uint_fast64_t> rndseed;
@@ -135,8 +137,10 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   Convert_mxArray(prhs[13], f);
   Convert_mxArray(prhs[14], phase0);
   Convert_mxArray(prhs[15], Nphoton);
-  Convert_mxArray(prhs[16], disable_pbar);
-  Convert_mxArray(prhs[17], rndseed);
+  Convert_mxArray(prhs[16], NBin3Dtheta);
+  Convert_mxArray(prhs[17], NBin3Dphi);
+  Convert_mxArray(prhs[18], disable_pbar);
+  Convert_mxArray(prhs[19], rndseed);
 
 //  Convert_mxArray(prhs[15], GaussianSigma); 
 
@@ -157,6 +161,8 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   MC.n = n;
   MC.f = f[0];
   MC.Nphoton = Nphoton[0];
+  MC.NBin3Dtheta = NBin3Dtheta[0];
+  MC.NBin3Dphi = NBin3Dphi[0];
   MC.phase0 = phase0[0];
   //MC.GaussianSigma = GaussianSigma;
   //make negative phase0 positive
@@ -207,6 +213,8 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   // Copy solution from MC to output
   Array<double> vsolr, vsoli, bsolr, bsoli;
   Array<double> dbsolr, dbsoli; // [AL]
+  Array<double> R_vsolr, R_vsoli, R_bsolr, R_bsoli;
+  Array<double> R_dbsolr, R_dbsoli; // [AL]
   
   Convert_mxArray(&plhs[0], vsolr, vsoli, MC.ER.Nx, MC.ER.Ny);
   Convert_mxArray(&plhs[1], bsolr, bsoli, MC.EBR.Nx, MC.EBR.Ny);

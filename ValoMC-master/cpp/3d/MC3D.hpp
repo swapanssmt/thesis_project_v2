@@ -141,6 +141,8 @@ public:
 
   // Number of photons to compute
   int_fast64_t Nphoton;
+  int_fast64_t NBin3Dtheta; // Number of bins in theta direction
+  int_fast64_t NBin3Dphi; // Number of bins in phi direction
 
   // Speed of light (mm / ps)
   double c0;
@@ -178,6 +180,8 @@ MC3D::MC3D()
   c0 = 2.99792458e11;
 
   Nphoton = 1;
+  NBin3Dtheta=1;
+  NBin3Dphi=1;
   f = omega = 0.0;
   weight0 = 0.001;
   chance = 0.1;
@@ -222,6 +226,8 @@ MC3D &MC3D::operator=(const MC3D &ref)
     omega = ref.omega;
     phase0 = ref.phase0; // [AL]
     Nphoton = ref.Nphoton;
+    NBin3Dtheta = ref.NBin3Dtheta;
+    NBin3Dphi = ref.NBin3Dphi;
     c0 = ref.c0;
 
     ER.resize(ref.ER.N);
@@ -603,6 +609,8 @@ void MC3D::Init()
   DistributeArray(BCn);
   MPI_Bcast(&f, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&Nphoton, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&NBin3Dtheta, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&NBin3Dphi, 1, MPI_LONG, 0, MPI_COMM_WORLD);
   MPI_Bcast(&weight0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&chance, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   Nphoton /= nodecount;
