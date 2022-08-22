@@ -151,6 +151,84 @@ template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, Array<T>
   arr.IsRef = iarr.IsRef = 1;
   arr.rank = iarr.rank = 2;
 }
+//************ modified part for 3d array output*******************
+
+
+// Create output array of size Nx, Ny content of which can be modified through arr
+template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, long Nx, long Ny long Nz){
+  mxClassID id;
+  if( typeid(T) == typeid(char) ) id = mxCHAR_CLASS;
+  else if( typeid(T) == typeid(double) ) id = mxDOUBLE_CLASS;
+  else if( typeid(T) == typeid(float) ) id = mxSINGLE_CLASS;
+  else if( typeid(T) == typeid(char) ) id = mxINT8_CLASS;
+  else if( typeid(T) == typeid(unsigned char) ) id = mxUINT8_CLASS;
+  else if( typeid(T) == typeid(short) ) id = mxINT16_CLASS;
+  else if( typeid(T) == typeid(unsigned short) ) id = mxUINT16_CLASS;
+  else if( typeid(T) == typeid(int) ) id = mxINT32_CLASS;
+  else if( typeid(T) == typeid(unsigned int) ) id = mxUINT32_CLASS;
+//  else if( typeid(T) == typeid(long) ) id = mxINT64_CLASS;
+//  else if( typeid(T) == typeid(unsigned long) ) id = mxUINT64_CLASS;
+  else if( typeid(T) == typeid(int_fast64_t) ) id = mxINT64_CLASS;
+  else if( typeid(T) == typeid(uint_fast64_t) ) id = mxUINT64_CLASS;
+//  else if( (id == mxINT64_CLASS) && (typeid(T) == typeid(int_fast64_t)) ) idok++;
+//  else if( (id == mxUINT64_CLASS) && (typeid(T) == typeid(uint_fast64_t)) ) idok++
+  else mexErrMsgTxt("Trying to initialize mxArray with unsupported type!\n");
+
+  // Create array
+  mwSize dims[3] = { (mwSize) Nx, (mwSize) Ny ,(mwSize) Nz};
+  *mx = mxCreateNumericArray(3, const_cast <const mwSize *> (dims), id, mxREAL);
+
+  // Parse data to Array
+  arr.data = (T *) mxGetData(*mx);
+  //arr.Nx = mxGetM(*mx);
+  //arr.Ny = mxGetN(*mx);
+  //arr.Nz = 1;
+  arr.Nx = mxGetDimensions(*mx)[0];
+  arr.Ny = mxGetDimensions(*mx)[1];
+  arr.Nz = mxGetDimensions(*mx)[2];
+  arr.Nxy = arr.Nx * arr.Ny;
+  arr.N = arr.Nx * arr.Ny * arr.Nz;
+  arr.IsRef = 1;
+  arr.rank = 3;
+}
+
+
+
+
+// Create complex output array of size Nx, Ny content of which can be modified through arr and iarr
+template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, Array<T> &iarr, long Nx, long Ny, long Nz){
+  mxClassID id;
+  if( typeid(T) == typeid(char) ) id = mxCHAR_CLASS;
+  else if( typeid(T) == typeid(double) ) id = mxDOUBLE_CLASS;
+  else if( typeid(T) == typeid(float) ) id = mxSINGLE_CLASS;
+  else if( typeid(T) == typeid(char) ) id = mxINT8_CLASS;
+  else if( typeid(T) == typeid(unsigned char) ) id = mxUINT8_CLASS;
+  else if( typeid(T) == typeid(short) ) id = mxINT16_CLASS;
+  else if( typeid(T) == typeid(unsigned short) ) id = mxUINT16_CLASS;
+  else if( typeid(T) == typeid(int) ) id = mxINT32_CLASS;
+  else if( typeid(T) == typeid(unsigned int) ) id = mxUINT32_CLASS;
+  else if( typeid(T) == typeid(long) ) id = mxINT64_CLASS;
+  else if( typeid(T) == typeid(unsigned long) ) id = mxUINT64_CLASS;
+  else mexErrMsgTxt("Trying to initialize mxArray with unsupported type!\n");
+
+  // Create array
+  mwSize dims[2] = { (mwSize) Nx, (mwSize) Ny };
+  *mx = mxCreateNumericArray(2, const_cast <const mwSize *> (dims), id, mxCOMPLEX);
+
+  // Parse data to Arrays
+  arr.data = (T *) mxGetData(*mx);
+  iarr.data = (T *) mxGetImagData(*mx);
+  //arr.Nx = iarr.Nx = mxGetM(*mx);
+  //arr.Ny = iarr.Ny = mxGetN(*mx);
+  //arr.Nz = iarr.Nz = 1;
+  arr.Nx = iarr.Nx = mxGetDimensions(*mx)[0];
+  arr.Ny = iarr.Ny = mxGetDimensions(*mx)[1];
+  arr.Nz = iarr.Nz = mxGetDimensions(*mx)[2];
+  arr.Nxy = iarr.Nxy = arr.Nx * arr.Ny;
+  arr.N = iarr.N = arr.Nx * arr.Ny * arr.Nz;
+  arr.IsRef = iarr.IsRef = 1;
+  arr.rank = iarr.rank = 3;
+}
 
 
 #endif

@@ -219,10 +219,17 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   Convert_mxArray(&plhs[0], vsolr, vsoli, MC.ER.Nx, MC.ER.Ny);
   Convert_mxArray(&plhs[1], bsolr, bsoli, MC.EBR.Nx, MC.EBR.Ny);
   Convert_mxArray(&plhs[2], dbsolr, dbsoli, MC.DEBR.Nx, MC.DEBR.Ny);
-  plhs[3]=mxCreateDoubleMatrix(1,1,mxREAL); // [AL]
+
+  // ****************modify************************
+  Convert_mxArray(&plhs[3], R_vsolr, R_vsoli, MC.R_ER.Nx, MC.R_ER.Ny,MC.R_ER.Nz);
+  Convert_mxArray(&plhs[4], R_bsolr, R_bsoli, MC.R_EBR.Nx, MC.R_EBR.Ny, MC.R_EBR.Nz);
+  Convert_mxArray(&plhs[5], R_dbsolr, R_dbsoli, MC.R_DEBR.Nx, MC.R_DEBR.Ny,MC.R_DEBR.Nz);
+  // ****************************************************
+
+  plhs[6]=mxCreateDoubleMatrix(1,1,mxREAL); // [AL]
   time(&now);
 
-  *mxGetPr(plhs[3])=(double) difftime(now,starting_time);
+  *mxGetPr(plhs[6])=(double) difftime(now,starting_time);
 
   long ii;
   for(ii = 0; ii < MC.ER.N; ii++){
@@ -238,14 +245,29 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
     dbsoli[ii] = MC.DEBI[ii];
   }
 
+  //*********************modify**************************
+  for(ii = 0; ii < MC.R_ER.N; ii++){
+    R_vsolr[ii] = MC.R_ER[ii];
+    R_vsoli[ii] = MC.R_EI[ii];
+  }
+  for(ii = 0; ii < MC.R_EBR.N; ii++){
+    R_bsolr[ii] = MC.R_EBR[ii];
+    R_bsoli[ii] = MC.R_EBI[ii];
+  }
+  for(ii = 0; ii < MC.R_DEBR.N; ii++){
+    R_dbsolr[ii] = MC.R_DEBR[ii];
+    R_dbsoli[ii] = MC.R_DEBI[ii];
+  }
+  //**********************************
+
   const mwSize dims[] = {1,1};
-  plhs[4] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
-  *((unsigned long*) mxGetData(plhs[4])) = MC.seed;
+  plhs[7] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+  *((unsigned long*) mxGetData(plhs[7])) = MC.seed;
 
   // Copy topology neighbourhood
   if(nlhs == 6){
     Array<long> HNo;
-    Convert_mxArray(&plhs[5], HNo, MC.HN.Nx, MC.HN.Ny);
+    Convert_mxArray(&plhs[8], HNo, MC.HN.Nx, MC.HN.Ny);
     for(ii = 0; ii < MC.HN.N; ii++) HNo[ii] = MC.HN[ii];
   }
 
