@@ -152,6 +152,14 @@ public:
   Array<double> EBR, EBI;   // Absorbed power density in the boundary elements (real & imaginary)
   Array<double> DEBR, DEBI; // Absorbed power density in the boundary elements (real & imaginary) weighted by the dot product
                             // of the direction of the photon packets and the boundary normal
+  
+  // ******************* modify ***********************
+  // Calculatable parameters
+  Array<double> R_ER, R_EI;     // Absorbed power density in the volumetric elements (real & imaginary)
+  Array<double> R_EBR, R_EBI;   // Absorbed power density in the boundary elements (real & imaginary)
+  Array<double> R_DEBR, R_DEBI; // Absorbed power density in the boundary elements (real & imaginary) weighted by the dot product
+                            // of the direction of the photon packets and the boundary normal
+  //****************************************************
 
   // Light source likelyhood & creation variables
   Array<int> LightSources;
@@ -234,19 +242,41 @@ MC3D &MC3D::operator=(const MC3D &ref)
     EI.resize(ref.EI.N);
     EBR.resize(ref.EBR.N);
     EBI.resize(ref.EBI.N);
+
+    // ******************Modify*********************
+    R_ER.resize(ref.R_ER.Nx,ref.R_ER.Ny,ref.R_ER.Nz);
+    R_EI.resize(ref.R_EI.Nx,ref.R_EI.Ny,ref.R_EI.Nz);
+    R_EBR.resize(ref.R_EBR.Nx,ref.R_EBR.Ny,ref.R_EBR.Nz);
+    R_EBI.resize(ref.R_EBI.Nx,ref.R_EBI.Ny,ref.R_EBI.Nz);
+    //**********************************************
     long ii;
 
     for (ii = 0; ii < ER.N; ii++)
       ER[ii] = EI[ii] = 0.0;
     for (ii = 0; ii < EBR.N; ii++)
       EBR[ii] = EBI[ii] = 0.0;
+    // ***************** modify*************
+    for (ii = 0; ii < R_ER.N; ii++)
+      R_ER[ii] = R_EI[ii] = 0.0;
+    for (ii = 0; ii < R_EBR.N; ii++)
+      R_EBR[ii] = R_EBI[ii] = 0.0;
+    //***********************************
 
     DEBR.resize(ref.DEBR.N); // [AL]
     DEBI.resize(ref.DEBI.N); // [AL]
+    
+    //****************MODIFY************
+    R_DEBR.resize(ref.R_DEBR.Nx,ref.R_DEBR.Ny,ref.R_DEBR.Nz); // [AL]
+    R_DEBI.resize(ref.R_DEBI.Nx,ref.R_DEBI.Ny,ref.R_DEBI.Nz); // [AL]
+    //***********************************************************
 
 
     for (ii = 0; ii < DEBR.N; ii++) // [AL]
       DEBR[ii] = DEBI[ii] = 0.0;    // [AL]
+    //***************** modify************
+    for (ii = 0; ii < R_DEBR.N; ii++) // [AL]
+      R_DEBR[ii] = R_DEBI[ii] = 0.0;    // [AL]
+    //************************************
 
 
     // Initialize BCIntensity to one if not given
@@ -623,22 +653,77 @@ void MC3D::Init()
 
   // Reserve memory for output variables
   int_fast64_t ii;
+  int_fast64_t jj;
+  int_fast64_t kk;
   ER.resize(H.Nx);
   EI.resize(H.Nx);
+  
+  // *****************Modify****************
+  R_ER.resize(H.Nx,NBin3Dtheta,NBin3Dphi);
+  R_EI.resize(H.Nx,NBin3Dtheta,NBin3Dphi);
+  //**************************************
 
   for (ii = 0; ii < H.Nx; ii++)
     ER[ii] = EI[ii] = 0.0;
+  
+  //*****************MODIFY***********
+  for (ii = 0; ii < H.Nx; ii++)
+  {
+    for(jj=0;jj<NBin3Dtheta;jj++)
+    {
+      for(kk=0;kk<NBin3Dphi;kk++)
+      {
+        R_ER(ii,jj,kk)=R_EI(ii,jj,kk)=0.0;
+      }
+    }
+  }
+  //*********************************
   EBR.resize(BH.Nx);
   EBI.resize(BH.Nx);
+  //**************************modify****************
+  R_EBR.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  R_EBI.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  //*********************************
 
   for (ii = 0; ii < BH.Nx; ii++)
     EBR[ii] = EBI[ii] = 0.0;
+  
+  //********************MODIFY*****************
+  for (ii = 0; ii < BH.Nx; ii++)
+  {
+    for(jj=0;jj<NBin3Dtheta;jj++)
+    {
+      for(kk=0;kk<NBin3Dphi;kk++)
+      {
+        R_EBR(ii,jj,kk)=R_EBI(ii,jj,kk)=0.0;
+      }
+    }
+  }
+  //***********************************************
 
   DEBR.resize(BH.Nx);
   DEBI.resize(BH.Nx);
 
+  //**************** modify**************
+  R_DEBR.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  R_DEBI.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  //**************************************
+
   for (ii = 0; ii < BH.Nx; ii++)
     DEBR[ii] = DEBI[ii] = 0.0;
+  
+  //******************MODIFY*******************
+  for (ii = 0; ii < BH.Nx; ii++)
+  {
+    for(jj=0;jj<NBin3Dtheta;jj++)
+    {
+      for(kk=0;kk<NBin3Dphi;kk++)
+      {
+        R_DEBR(ii,jj,kk)=R_DEBI(ii,jj,kk)=0.0;
+      }
+    }
+  }
+  //**************************************
 
 
   // Initialize BCIntensity to one if not given
