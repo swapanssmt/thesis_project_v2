@@ -97,7 +97,7 @@ int LoadProblem_TXT(char *fin){
   /*
     File Structure for text input:
 
-      Ne Nb Nr Nphoton
+      Ne Nb Nr Nphoton NBin3Dtheta NBin3Dphi
       f
       H
       BH
@@ -119,7 +119,7 @@ int LoadProblem_TXT(char *fin){
   if(fp == NULL) return(1);
 
 
-  fsr=fscanf(fp, "%li %li %li %li\n", &Ne, &Nb, &Nr, &MC.Nphoton);
+  fsr=fscanf(fp, "%li %li %li %li %li %li\n", &Ne, &Nb, &Nr, &MC.Nphoton, &MC.NBin3Dtheta, &MC.NBin3Dphi);
   fsr=fscanf(fp, "%lf %lf %li %li\n", &MC.f, &MC.phase0, &sd1, &sd2);
 
   if(sd2) {
@@ -143,6 +143,8 @@ int LoadProblem_TXT(char *fin){
   printf("  %10s   (%li)\n", "Nb", Nb);
   printf("  %10s   (%li)\n", "Nr", Nr);
   printf("  %10s   (%li)\n", "Nphoton", MC.Nphoton);
+  printf("  %10s   (%li)\n", "NBin3Dtheta", MC.NBin3Dtheta);
+  printf("  %10s   (%li)\n", "NBin3Dphi", MC.NBin3Dphi);
   printf("  %10s   (%li)\n", "seed", MC.seed);
   printf("Arrays:\n");
 
@@ -186,6 +188,10 @@ int SaveProblem_TXT(char *fout, int time){
   
   for(ii = 0; ii < MC.ER.Nx; ii++) fprintf(fp, "%18.10e %18.10e\n", MC.ER[ii], MC.EI[ii]);
   for(ii = 0; ii < MC.EBR.Nx; ii++) fprintf(fp, "%18.10e %18.10e\n", MC.EBR[ii], MC.EBI[ii]);
+  // ******************** modify*********************************
+  for(ii = 0; ii < MC.R_ER.N; ii++) fprintf(fp, "%18.10e %18.10e\n", MC.R_ER[ii], MC.R_EI[ii]);
+  for(ii = 0; ii < MC.R_EBR.N; ii++) fprintf(fp, "%18.10e %18.10e\n", MC.R_EBR[ii], MC.R_EBI[ii]);
+  //************************************************************************
   
   fclose(fp);
 
