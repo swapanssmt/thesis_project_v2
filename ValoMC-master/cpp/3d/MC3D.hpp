@@ -1567,6 +1567,20 @@ void MC3D::PropagatePhoton(Photon *phot)
       phot->pos[0] += phot->dir[0] * ds;
       phot->pos[1] += phot->dir[1] * ds;
       phot->pos[2] += phot->dir[2] * ds;
+      double magn=sqrt(pow(phot->dir[0],2)+pow(phot->dir[1],2)+pow(phot->dir[2],2));
+      double u_x=phot->dir[0]/magn;
+      double u_y=phot->dir[1]/magn;
+      double u_z=phot->dir[2]/magn;
+      double theta=acos(u_z);
+      double phi=atan2(u_y,u_x);
+      if(phi<0)
+      {
+        phi=phi+2*M_PI;
+      }
+      double diff1=M_PI/NBin3Dtheta;
+      double diff2=2*M_PI/NBin3Dphi;
+      long idx1=floor(theta/diff1);
+      long idx2=floor(phi/diff2);
 
       // Upgrade element fluence
       if (omega <= 0.0)
@@ -1575,10 +1589,12 @@ void MC3D::PropagatePhoton(Photon *phot)
         if (mua[phot->curel] > 0.0)
         {
           ER[phot->curel] += (1.0 - exp(-mua[phot->curel] * ds)) * phot->weight;
+          R_ER(phot->curel,idx1,idx2) += (1.0 - exp(-mua[phot->curel] * ds)) * phot->weight;
         }
         else
         {
           ER[phot->curel] += phot->weight * ds;
+          R_ER(phot->curel,idx1,idx2) += phot->weight * ds;
         }
       }
       else
@@ -1611,6 +1627,8 @@ void MC3D::PropagatePhoton(Photon *phot)
 
         ER[phot->curel] += phot->weight * (cos(phot->phase) - cos(-phot->phase - k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
         EI[phot->curel] += phot->weight * (-sin(phot->phase) + sin(phot->phase + k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
+        R_ER(phot->curel,idx1,idx2) += phot->weight * (cos(phot->phase) - cos(-phot->phase - k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
+        R_EI(phot->curel,idx1,idx2) += phot->weight * (-sin(phot->phase) + sin(phot->phase + k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
 
         phot->phase += k[phot->curel] * ds;
       }
@@ -1649,11 +1667,14 @@ void MC3D::PropagatePhoton(Photon *phot)
           if (omega <= 0.0)
           {
             EBR[ib] += phot->weight;
+            R_EBR(ib,idx1,idx2) += phot->weight;
           }
           else
           {
             EBR[ib] += phot->weight * cos(phot->phase);
             EBI[ib] -= phot->weight * sin(phot->phase);
+            R_EBR(ib,idx1,idx2) += phot->weight * cos(phot->phase);
+            R_EBI(ib,idx1,idx2) -= phot->weight * sin(phot->phase);
           }
           // Photon propagation will terminate
           return;
@@ -1802,6 +1823,17 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
       EI[ii] += MCS[jj].EI[ii];
     }
   }
+  // ******************** modify****************
+  for (ii = 0; ii < H.Nx*NBin3Dtheta*NBin3Dphi; ii++)
+  {
+    R_ER[ii] = R_EI[ii] = 0.0;
+    for (jj = 0; jj < nthread; jj++)
+    {
+      R_ER[ii] += MCS[jj].R_ER[ii];
+      R_EI[ii] += MCS[jj].R_EI[ii];
+    }
+  }
+  //********************************************
   for (ii = 0; ii < BH.Nx; ii++)
   {
     EBR[ii] = EBI[ii] = 0.0;
@@ -1811,6 +1843,17 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
       EBI[ii] += MCS[jj].EBI[ii];
     }
   }
+  // ***************MODIFY ************************
+  for (ii = 0; ii < BH.Nx*NBin3Dtheta*NBin3Dphi; ii++)
+  {
+    R_EBR[ii] = R_EBI[ii] = 0.0;
+    for (jj = 0; jj < nthread; jj++)
+    {
+      R_EBR[ii] += MCS[jj].R_EBR[ii];
+      R_EBI[ii] += MCS[jj].R_EBI[ii];
+    }
+  }
+  //*********************************
 
   for (ii = 0; ii < BH.Nx; ii++) // [AL]
   {
@@ -1821,6 +1864,17 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
       DEBI[ii] += MCS[jj].DEBI[ii];
     }
   }
+  //******************** MODIFY*******************
+  for (ii = 0; ii < BH.Nx*NBin3Dtheta*NBin3Dphi; ii++) // [AL]
+  {
+    R_DEBR[ii] = R_DEBI[ii] = 0.0;
+    for (jj = 0; jj < nthread; jj++)
+    {
+      R_DEBR[ii] += MCS[jj].R_DEBR[ii];
+      R_DEBI[ii] += MCS[jj].R_DEBI[ii];
+    }
+  }
+  //*************************************
 
   //  delete[] itick;
   delete[] ticks;
@@ -1855,6 +1909,12 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
   AllReduceArray(EI, MPI_SUM);
   AllReduceArray(EBR, MPI_SUM);
   AllReduceArray(EBI, MPI_SUM);
+  // ***********************MODIFY********************
+  AllReduceArray(R_ER, MPI_SUM);
+  AllReduceArray(R_EI, MPI_SUM);
+  AllReduceArray(R_EBR, MPI_SUM);
+  AllReduceArray(R_EBI, MPI_SUM);
+  //*******************************************************
   // Sum up computed photons
   long tmplong;
   MPI_Allreduce(&Nphoton, &tmplong, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1892,6 +1952,62 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
     }
   }
 
+  // ************************* modify*************************
+  long jj,kk;
+  // Normalize output variables
+  if (omega <= 0.0)
+  {
+    for (ii = 0; ii < H.Nx; ii++)
+    {
+      for(jj=0;jj<NBin3Dtheta;jj++)
+      {
+        for(kk=0;kk<NBin3Dphi;kk++)
+        {
+          if (mua[ii] > 0.0)
+           R_ER(ii,jj,kk) /= mua[ii] * ElementVolume(ii) * (double)Nphoton;
+          else
+           R_ER(ii,jj,kk) /= ElementVolume(ii) * (double)Nphoton;
+        }
+      }
+    }
+    for (ii = 0; ii < BH.Nx; ii++)
+    {
+      for(jj = 0; jj < NBin3Dtheta; jj++)
+      {
+        for(kk = 0; kk < NBin3Dphi; kk++)
+        {
+          R_EBR(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
+        }
+      }
+    }
+  }
+  else
+  {
+    for (ii = 0; ii < H.Nx; ii++)
+    {
+      for(jj=0;jj<NBin3Dtheta;jj++)
+      {
+        for(kk=0;kk<NBin3Dphi;kk++)
+        {
+          double a = R_ER(ii,jj,kk), b = R_EI(ii,jj,kk);
+          R_ER(ii,jj,kk) = (b * k[ii] + a * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
+          R_EI(ii,jj,kk) = -(a * k[ii] - b * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
+        }
+      }
+    }
+    for (ii = 0; ii < BH.Nx; ii++)
+    {
+      for(jj=0;jj<NBin3Dtheta;jj++)
+      {
+        for(kk=0;kk<NBin3Dphi;kk++)
+        {
+          R_EBR(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
+          R_EBI(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
+        }
+      }
+    }
+  }
+  //***********************************************************
   if (progress != NULL)
     progress(100);
 }
