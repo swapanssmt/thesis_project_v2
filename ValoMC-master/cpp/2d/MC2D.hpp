@@ -148,6 +148,7 @@ public:
 
   // Number of photons to compute
   int_fast64_t Nphoton;
+  int_fast64_t NBin2Dtheta;
 
   // Speed of light (mm / ps)
   double c0;
@@ -185,6 +186,7 @@ MC2D::MC2D()
   c0 = 2.99792458e11;
 
   Nphoton = 1;
+  NBin2Dtheta=1;
   f = omega = 0.0;
   weight0 = 0.001;
   chance = 0.1;
@@ -231,6 +233,7 @@ MC2D &MC2D::operator=(const MC2D &ref)
     phase0 = ref.phase0; // [AL]
     omega = ref.omega;
     Nphoton = ref.Nphoton;
+    NBin2Dtheta = ref.NBin2Dtheta;
     c0 = ref.c0;
 
     ER.resize(ref.ER.N);
@@ -545,6 +548,7 @@ void MC2D::Init()
   DistributeArray(BCn);
   MPI_Bcast(&f, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&Nphoton, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&NBin2Dtheta, 1, MPI_LONG, 0, MPI_COMM_WORLD);
   MPI_Bcast(&weight0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&chance, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   Nphoton /= nodecount;
