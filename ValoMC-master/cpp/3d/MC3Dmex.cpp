@@ -265,7 +265,7 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   *((unsigned long*) mxGetData(plhs[7])) = MC.seed;
 
   // Copy topology neighbourhood
-  if(nlhs == 8){
+  if(nlhs == 9){
     Array<long> HNo;
     Convert_mxArray(&plhs[8], HNo, MC.HN.Nx, MC.HN.Ny);
     for(ii = 0; ii < MC.HN.N; ii++) HNo[ii] = MC.HN[ii];
