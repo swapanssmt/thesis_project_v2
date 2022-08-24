@@ -1581,6 +1581,10 @@ void MC3D::PropagatePhoton(Photon *phot)
       double diff2=2*M_PI/NBin3Dphi;
       long idx1=floor(theta/diff1);
       long idx2=floor(phi/diff2);
+      if(idx1==NBin3Dtheta)
+      {
+        idx1=idx1-1;
+      }
 
       // Upgrade element fluence
       if (omega <= 0.0)
