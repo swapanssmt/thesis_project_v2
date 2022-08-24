@@ -212,8 +212,8 @@ template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, Array<T>
   else mexErrMsgTxt("Trying to initialize mxArray with unsupported type!\n");
 
   // Create array
-  mwSize dims[2] = { (mwSize) Nx, (mwSize) Ny };
-  *mx = mxCreateNumericArray(2, const_cast <const mwSize *> (dims), id, mxCOMPLEX);
+  mwSize dims[3] = { (mwSize) Nx, (mwSize) Ny ,(mwSize) Nz};
+  *mx = mxCreateNumericArray(3, const_cast <const mwSize *> (dims), id, mxCOMPLEX);
 
   // Parse data to Arrays
   arr.data = (T *) mxGetData(*mx);
