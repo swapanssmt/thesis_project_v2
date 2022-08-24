@@ -155,7 +155,7 @@ template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, Array<T>
 
 
 // Create output array of size Nx, Ny content of which can be modified through arr
-template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, long Nx, long Ny long Nz){
+template <typename T> void Convert_mxArray(mxArray **mx, Array<T> &arr, long Nx, long Ny, long Nz){
   mxClassID id;
   if( typeid(T) == typeid(char) ) id = mxCHAR_CLASS;
   else if( typeid(T) == typeid(double) ) id = mxDOUBLE_CLASS;
