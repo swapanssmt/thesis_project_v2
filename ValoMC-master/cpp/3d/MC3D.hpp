@@ -1957,7 +1957,7 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
   }
 
   // ************************* modify*************************
-  long jj,kk;
+  long kk;
   // Normalize output variables
   if (omega <= 0.0)
   {
