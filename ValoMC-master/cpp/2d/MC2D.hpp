@@ -1786,7 +1786,7 @@ void MC2D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
   MPI_Allreduce(&loss, &tmplong, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
   loss = tmplong;
 #endif
-  long jj;
+  //long jj;
   // Normalize output variables
   if (omega <= 0.0)
   {
