@@ -1589,12 +1589,13 @@ void MC2D::PropagatePhoton(Photon *phot)
 // Run Monte Carlo
 void MC2D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
 {
+  long ii, jj;
 #ifdef USE_OMP
 
   // OpenMP implementation
 
   // Spawn new MC2D classes with Nphoton' = Nphoton / ThreadCount, and initialize mt_rng seed
-  long ii, jj, nthread = omp_get_max_threads(); // [AL]
+  long nthread = omp_get_max_threads(); // [AL]
   if (nthread <= 0)
   {
     printf("OpenMP initialization problem!");

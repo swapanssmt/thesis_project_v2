@@ -1740,12 +1740,13 @@ void MC3D::PropagatePhoton(Photon *phot)
 // Run Monte Carlo
 void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
 {
+  int_fast64_t ii, jj;
 #ifdef USE_OMP
 
   // OpenMP implementation
 
   // Spawn new MC3D classes with Nphoton' = Nphoton / ThreadCount, and initialize mt_rng seed
-  int_fast64_t ii, jj, nthread = omp_get_max_threads();
+  int_fast64_t nthread = omp_get_max_threads();
   int_fast64_t *ticks = new int_fast64_t[(int)nthread];
   MC3D *MCS = new MC3D[(int)nthread];
   bool abort_computation = false;
