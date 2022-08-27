@@ -1740,7 +1740,7 @@ void MC2D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
 #else
 
   // Single thread implementation
-  long ii;
+  //long ii;
 
   //long itick = max(1, Nphoton / 100);
   long itick = 5000;
