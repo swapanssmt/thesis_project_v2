@@ -162,8 +162,9 @@ function solution = ValoMC(vmcmesh, vmcmedium, vmcboundary, vmcoptions)
     phase0 = 0;
     disable_pbar = int64(0);
     NBin2Dtheta=int64(16);
-    NBin3Dtheta=int64(8);
-    NBin3Dphi=int64(8);
+    %NBin3Dtheta=int64(8);
+    %NBin3Dphi=int64(8);
+    ang_discr_centroid=angle3Ddiscreteization();
     % complement with user provided options
     if(exist('vmcoptions')==1)
         if(isfield(vmcoptions, 'frequency'))
@@ -183,12 +184,12 @@ function solution = ValoMC(vmcmesh, vmcmedium, vmcboundary, vmcoptions)
         if(isfield(vmcoptions, 'NBin2Dtheta'))
             NBin2Dtheta = int64(vmcoptions.NBin2Dtheta);
         end
-        if(isfield(vmcoptions, 'NBin3Dtheta'))
-            NBin3Dtheta = int64(vmcoptions.NBin3Dtheta);
-        end
-        if(isfield(vmcoptions, 'NBin3Dphi'))
-            NBin3Dphi = int64(vmcoptions.NBin3Dphi);
-        end
+        %if(isfield(vmcoptions, 'NBin3Dtheta'))
+        %    NBin3Dtheta = int64(vmcoptions.NBin3Dtheta);
+        %end
+        %if(isfield(vmcoptions, 'NBin3Dphi'))
+        %    NBin3Dphi = int64(vmcoptions.NBin3Dphi);
+        %end
 	if(isfield(vmcoptions, 'seed'))
 	    rnseed(1) = vmcoptions.seed;
 	    rnseed(2) = 1;
@@ -346,7 +347,7 @@ function solution = ValoMC(vmcmesh, vmcmedium, vmcboundary, vmcoptions)
             fclose(fp);
             return
         else
-            [solution.element_fluence, solution.boundary_exitance, solution.boundary_fluence, solution.R_element_fluence, solution.R_boundary_exitance, solution.R_boundary_fluence, solution.simulation_time, solution.seed_used] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLightDirection, BCn, mua, mus, g, n, f, phase0, Nphoton,NBin3Dtheta,NBin3Dphi, disable_pbar, uint64(rnseed));
+            [solution.element_fluence, solution.boundary_exitance, solution.boundary_fluence, solution.R_element_fluence, solution.R_boundary_exitance, solution.R_boundary_fluence, solution.simulation_time, solution.seed_used] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLightDirection, BCn, mua, mus, g, n, f, phase0, Nphoton, ang_discr_centroid, disable_pbar, uint64(rnseed));
         end
         if(isfield(vmcmedium,'nx') && isfield(vmcmedium,'ny') && isfield(vmcmedium,'nz'))
             % Three dimensional input
