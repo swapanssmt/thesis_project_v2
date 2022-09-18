@@ -97,11 +97,12 @@ int LoadProblem_TXT(char *fin){
   /*
     File Structure for text input:
 
-      Ne Nb Nr Nphoton NBin3Dtheta NBin3Dphi
+      Ne Nb Nr NAe Nphoton
       f
       H
       BH
       r
+      ang_discr_centroid
       mua mus g n
       BCType
       [BCn]
@@ -112,14 +113,14 @@ int LoadProblem_TXT(char *fin){
   */
 
   int_fast64_t ii;
-  int_fast64_t Ne, Nb, Nr,sd1,sd2;
+  int_fast64_t Ne, Nb, Nr,NAe,sd1,sd2;
   int fsr; // return value for file open (for avoiding compiler warnings)
 
   FILE *fp = fopen(fin, "r");
   if(fp == NULL) return(1);
 
 
-  fsr=fscanf(fp, "%li %li %li %li %li %li\n", &Ne, &Nb, &Nr, &MC.Nphoton, &MC.NBin3Dtheta, &MC.NBin3Dphi);
+  fsr=fscanf(fp, "%li %li %li %li %li\n", &Ne, &Nb, &Nr, &NAe, &MC.Nphoton);
   fsr=fscanf(fp, "%lf %lf %li %li\n", &MC.f, &MC.phase0, &sd1, &sd2);
 
   if(sd2) {
@@ -142,9 +143,10 @@ int LoadProblem_TXT(char *fin){
   printf("  %10s   (%li)\n", "Ne", Ne);
   printf("  %10s   (%li)\n", "Nb", Nb);
   printf("  %10s   (%li)\n", "Nr", Nr);
+  printf("  %10s   (%li)\n", "NAe", NAe);
   printf("  %10s   (%li)\n", "Nphoton", MC.Nphoton);
-  printf("  %10s   (%li)\n", "NBin3Dtheta", MC.NBin3Dtheta);
-  printf("  %10s   (%li)\n", "NBin3Dphi", MC.NBin3Dphi);
+  //printf("  %10s   (%li)\n", "NBin3Dtheta", MC.NBin3Dtheta);
+  //printf("  %10s   (%li)\n", "NBin3Dphi", MC.NBin3Dphi);
   printf("  %10s   (%li)\n", "seed", MC.seed);
   printf("Arrays:\n");
 
@@ -157,6 +159,7 @@ int LoadProblem_TXT(char *fin){
   readAndResize(fp, (int)Ne, 4, true, &MC.H, "H");
   readAndResize(fp, (int)Nb, 3, true, &MC.BH, "BH");
   readAndResize(fp, (int)Nr, 3, true, &MC.r, "r");
+  readAndResize(fp, (int)NAe, 3, true, &MC.ang_discr_centroid, "ang_discr_centroid");
   readAndResize(fp, (int)Ne, 1, true, &MC.mua, &MC.mus, &MC.g, &MC.n, "mua", "mus", "g", "n");
   readAndResize(fp, (int)Nb, 1, true, &MC.BCType, "BCType");
   readAndResize(fp, (int)Nb, 1, false, &MC.BCn, "BCn");

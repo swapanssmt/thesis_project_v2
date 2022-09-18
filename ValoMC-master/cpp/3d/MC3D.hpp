@@ -107,7 +107,7 @@ public:
 public:
   // Geometry
   Array<int_fast64_t> H, HN, BH; // Topology, Neigbourhood, Boundary
-  Array<double> r;               // Grid nodes
+  Array<double> r, ang_discr_centroid;               // Grid nodes and coordinates of centroid of unit sphere for angular discretization
 
   // Material parameters for each Element
   Array<double> mua, mus, g, n; // Absorption, Scattering & Scattering inhomogeneity, Index of refraction
@@ -141,8 +141,8 @@ public:
 
   // Number of photons to compute
   int_fast64_t Nphoton;
-  int_fast64_t NBin3Dtheta; // Number of bins in theta direction
-  int_fast64_t NBin3Dphi; // Number of bins in phi direction
+  //int_fast64_t NBin3Dtheta; // Number of bins in theta direction
+  //int_fast64_t NBin3Dphi; // Number of bins in phi direction
 
   // Speed of light (mm / ps)
   double c0;
@@ -188,8 +188,8 @@ MC3D::MC3D()
   c0 = 2.99792458e11;
 
   Nphoton = 1;
-  NBin3Dtheta=1;
-  NBin3Dphi=1;
+  //NBin3Dtheta=1;
+  //NBin3Dphi=1;
   f = omega = 0.0;
   weight0 = 0.001;
   chance = 0.1;
@@ -234,8 +234,9 @@ MC3D &MC3D::operator=(const MC3D &ref)
     omega = ref.omega;
     phase0 = ref.phase0; // [AL]
     Nphoton = ref.Nphoton;
-    NBin3Dtheta = ref.NBin3Dtheta;
-    NBin3Dphi = ref.NBin3Dphi;
+    ang_discr_centroid = ref.ang_discr_centroid;
+    //NBin3Dtheta = ref.NBin3Dtheta;
+    //NBin3Dphi = ref.NBin3Dphi;
     c0 = ref.c0;
 
     ER.resize(ref.ER.N);
@@ -244,10 +245,10 @@ MC3D &MC3D::operator=(const MC3D &ref)
     EBI.resize(ref.EBI.N);
 
     // ******************Modify*********************
-    R_ER.resize(ref.R_ER.Nx,ref.R_ER.Ny,ref.R_ER.Nz);
-    R_EI.resize(ref.R_EI.Nx,ref.R_EI.Ny,ref.R_EI.Nz);
-    R_EBR.resize(ref.R_EBR.Nx,ref.R_EBR.Ny,ref.R_EBR.Nz);
-    R_EBI.resize(ref.R_EBI.Nx,ref.R_EBI.Ny,ref.R_EBI.Nz);
+    R_ER.resize(ref.R_ER.Nx,ref.R_ER.Ny);
+    R_EI.resize(ref.R_EI.Nx,ref.R_EI.Ny);
+    R_EBR.resize(ref.R_EBR.Nx,ref.R_EBR.Ny);
+    R_EBI.resize(ref.R_EBI.Nx,ref.R_EBI.Ny);
     //**********************************************
     long ii;
 
@@ -266,8 +267,8 @@ MC3D &MC3D::operator=(const MC3D &ref)
     DEBI.resize(ref.DEBI.N); // [AL]
     
     //****************MODIFY************
-    R_DEBR.resize(ref.R_DEBR.Nx,ref.R_DEBR.Ny,ref.R_DEBR.Nz); // [AL]
-    R_DEBI.resize(ref.R_DEBI.Nx,ref.R_DEBI.Ny,ref.R_DEBI.Nz); // [AL]
+    R_DEBR.resize(ref.R_DEBR.Nx,ref.R_DEBR.Ny); // [AL]
+    R_DEBI.resize(ref.R_DEBI.Nx,ref.R_DEBI.Ny); // [AL]
     //***********************************************************
 
 
@@ -630,6 +631,7 @@ void MC3D::Init()
   DistributeArray(HN);
   DistributeArray(BH);
   DistributeArray(r);
+  DistributeArray(ang_discr_centroid);
   DistributeArray(mua);
   DistributeArray(mus);
   DistributeArray(g);
@@ -639,8 +641,8 @@ void MC3D::Init()
   DistributeArray(BCn);
   MPI_Bcast(&f, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&Nphoton, 1, MPI_LONG, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&NBin3Dtheta, 1, MPI_LONG, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&NBin3Dphi, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  //MPI_Bcast(&NBin3Dtheta, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  //MPI_Bcast(&NBin3Dphi, 1, MPI_LONG, 0, MPI_COMM_WORLD);
   MPI_Bcast(&weight0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Bcast(&chance, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   Nphoton /= nodecount;
@@ -654,13 +656,13 @@ void MC3D::Init()
   // Reserve memory for output variables
   int_fast64_t ii;
   int_fast64_t jj;
-  int_fast64_t kk;
+  //int_fast64_t kk;
   ER.resize(H.Nx);
   EI.resize(H.Nx);
   
   // *****************Modify****************
-  R_ER.resize(H.Nx,NBin3Dtheta,NBin3Dphi);
-  R_EI.resize(H.Nx,NBin3Dtheta,NBin3Dphi);
+  R_ER.resize(H.Nx, ang_discr_centroid.Nx);
+  R_EI.resize(H.Nx, ang_discr_centroid.Nx);
   //**************************************
 
   for (ii = 0; ii < H.Nx; ii++)
@@ -669,20 +671,17 @@ void MC3D::Init()
   //*****************MODIFY***********
   for (ii = 0; ii < H.Nx; ii++)
   {
-    for(jj=0;jj<NBin3Dtheta;jj++)
+    for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
     {
-      for(kk=0;kk<NBin3Dphi;kk++)
-      {
-        R_ER(ii,jj,kk)=R_EI(ii,jj,kk)=0.0;
-      }
+      R_ER(ii,jj)=R_EI(ii,jj)=0.0;
     }
   }
   //*********************************
   EBR.resize(BH.Nx);
   EBI.resize(BH.Nx);
   //**************************modify****************
-  R_EBR.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
-  R_EBI.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  R_EBR.resize(BH.Nx, ang_discr_centroid.Nx);
+  R_EBI.resize(BH.Nx, ang_discr_centroid.Nx);
   //*********************************
 
   for (ii = 0; ii < BH.Nx; ii++)
@@ -691,12 +690,9 @@ void MC3D::Init()
   //********************MODIFY*****************
   for (ii = 0; ii < BH.Nx; ii++)
   {
-    for(jj=0;jj<NBin3Dtheta;jj++)
+    for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
     {
-      for(kk=0;kk<NBin3Dphi;kk++)
-      {
-        R_EBR(ii,jj,kk)=R_EBI(ii,jj,kk)=0.0;
-      }
+      R_EBR(ii,jj)=R_EBI(ii,jj)=0.0;
     }
   }
   //***********************************************
@@ -705,8 +701,8 @@ void MC3D::Init()
   DEBI.resize(BH.Nx);
 
   //**************** modify**************
-  R_DEBR.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
-  R_DEBI.resize(BH.Nx,NBin3Dtheta,NBin3Dphi);
+  R_DEBR.resize(BH.Nx, ang_discr_centroid.Nx);
+  R_DEBI.resize(BH.Nx, ang_discr_centroid.Nx);
   //**************************************
 
   for (ii = 0; ii < BH.Nx; ii++)
@@ -715,12 +711,9 @@ void MC3D::Init()
   //******************MODIFY*******************
   for (ii = 0; ii < BH.Nx; ii++)
   {
-    for(jj=0;jj<NBin3Dtheta;jj++)
+    for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
     {
-      for(kk=0;kk<NBin3Dphi;kk++)
-      {
-        R_DEBR(ii,jj,kk)=R_DEBI(ii,jj,kk)=0.0;
-      }
+      R_DEBR(ii,jj)=R_DEBI(ii,jj)=0.0;
     }
   }
   //**************************************
@@ -1571,19 +1564,17 @@ void MC3D::PropagatePhoton(Photon *phot)
       double u_x=phot->dir[0]/magn;
       double u_y=phot->dir[1]/magn;
       double u_z=phot->dir[2]/magn;
-      double theta=acos(u_z);
-      double phi=atan2(u_y,u_x);
-      if(phi<0)
+      long idx1=0;
+      long idx2;
+      double dis_centroid=0.0;
+      for(idx2 = 0; idx2 < ang_discr_centroid.Nx; idx2++)
       {
-        phi=phi+2*M_PI;
-      }
-      double diff1=M_PI/NBin3Dtheta;
-      double diff2=2*M_PI/NBin3Dphi;
-      long idx1=floor(theta/diff1);
-      long idx2=floor(phi/diff2);
-      if(idx1==NBin3Dtheta)
-      {
-        idx1=idx1-1;
+        double dis_centroid1 = sqrt(pow((ang_discr_centroid(idx2,0)-u_x),2)+pow((ang_discr_centroid(idx2,1)-u_y),2)+pow((ang_discr_centroid(idx2,2)-u_z),2));
+        if(dis_centroid1 < dis_centroid)
+        {
+          dis_centroid=dis_centroid1;
+          idx1=idx2;
+        }
       }
 
       // Upgrade element fluence
@@ -1593,12 +1584,12 @@ void MC3D::PropagatePhoton(Photon *phot)
         if (mua[phot->curel] > 0.0)
         {
           ER[phot->curel] += (1.0 - exp(-mua[phot->curel] * ds)) * phot->weight;
-          R_ER(phot->curel,idx1,idx2) += (1.0 - exp(-mua[phot->curel] * ds)) * phot->weight;
+          R_ER(phot->curel,idx1) += (1.0 - exp(-mua[phot->curel] * ds)) * phot->weight;
         }
         else
         {
           ER[phot->curel] += phot->weight * ds;
-          R_ER(phot->curel,idx1,idx2) += phot->weight * ds;
+          R_ER(phot->curel,idx1) += phot->weight * ds;
         }
       }
       else
@@ -1631,8 +1622,8 @@ void MC3D::PropagatePhoton(Photon *phot)
 
         ER[phot->curel] += phot->weight * (cos(phot->phase) - cos(-phot->phase - k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
         EI[phot->curel] += phot->weight * (-sin(phot->phase) + sin(phot->phase + k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
-        R_ER(phot->curel,idx1,idx2) += phot->weight * (cos(phot->phase) - cos(-phot->phase - k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
-        R_EI(phot->curel,idx1,idx2) += phot->weight * (-sin(phot->phase) + sin(phot->phase + k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
+        R_ER(phot->curel,idx1) += phot->weight * (cos(phot->phase) - cos(-phot->phase - k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
+        R_EI(phot->curel,idx1) += phot->weight * (-sin(phot->phase) + sin(phot->phase + k[phot->curel] * ds) * exp(-mua[phot->curel] * ds));
 
         phot->phase += k[phot->curel] * ds;
       }
@@ -1671,14 +1662,14 @@ void MC3D::PropagatePhoton(Photon *phot)
           if (omega <= 0.0)
           {
             EBR[ib] += phot->weight;
-            R_EBR(ib,idx1,idx2) += phot->weight;
+            R_EBR(ib,idx1) += phot->weight;
           }
           else
           {
             EBR[ib] += phot->weight * cos(phot->phase);
             EBI[ib] -= phot->weight * sin(phot->phase);
-            R_EBR(ib,idx1,idx2) += phot->weight * cos(phot->phase);
-            R_EBI(ib,idx1,idx2) -= phot->weight * sin(phot->phase);
+            R_EBR(ib,idx1) += phot->weight * cos(phot->phase);
+            R_EBI(ib,idx1) -= phot->weight * sin(phot->phase);
           }
           // Photon propagation will terminate
           return;
@@ -1829,7 +1820,7 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
     }
   }
   // ******************** modify****************
-  for (ii = 0; ii < H.Nx*NBin3Dtheta*NBin3Dphi; ii++)
+  for (ii = 0; ii < H.Nx*ang_discr_centroid.Nx; ii++)
   {
     R_ER[ii] = R_EI[ii] = 0.0;
     for (jj = 0; jj < nthread; jj++)
@@ -1849,7 +1840,7 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
     }
   }
   // ***************MODIFY ************************
-  for (ii = 0; ii < BH.Nx*NBin3Dtheta*NBin3Dphi; ii++)
+  for (ii = 0; ii < BH.Nx*ang_discr_centroid.Nx; ii++)
   {
     R_EBR[ii] = R_EBI[ii] = 0.0;
     for (jj = 0; jj < nthread; jj++)
@@ -1870,7 +1861,7 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
     }
   }
   //******************** MODIFY*******************
-  for (ii = 0; ii < BH.Nx*NBin3Dtheta*NBin3Dphi; ii++) // [AL]
+  for (ii = 0; ii < BH.Nx*ang_discr_centroid.Nx; ii++) // [AL]
   {
     R_DEBR[ii] = R_DEBI[ii] = 0.0;
     for (jj = 0; jj < nthread; jj++)
@@ -1958,31 +1949,25 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
   }
 
   // ************************* modify*************************
-  long kk;
+  //long kk;
   // Normalize output variables
   if (omega <= 0.0)
   {
     for (ii = 0; ii < H.Nx; ii++)
     {
-      for(jj=0;jj<NBin3Dtheta;jj++)
+      for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
       {
-        for(kk=0;kk<NBin3Dphi;kk++)
-        {
           if (mua[ii] > 0.0)
-           R_ER(ii,jj,kk) /= mua[ii] * ElementVolume(ii) * (double)Nphoton;
+           R_ER(ii,jj) /= mua[ii] * ElementVolume(ii) * (double)Nphoton;
           else
-           R_ER(ii,jj,kk) /= ElementVolume(ii) * (double)Nphoton;
-        }
+           R_ER(ii,jj) /= ElementVolume(ii) * (double)Nphoton;
       }
     }
     for (ii = 0; ii < BH.Nx; ii++)
     {
-      for(jj = 0; jj < NBin3Dtheta; jj++)
+      for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
       {
-        for(kk = 0; kk < NBin3Dphi; kk++)
-        {
-          R_EBR(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
-        }
+        R_EBR(ii,jj) /= (double)Nphoton * ElementArea(ii);
       }
     }
   }
@@ -1990,25 +1975,19 @@ void MC3D::MonteCarlo(bool (*progress)(double), void (*finalchecks)(int,int))
   {
     for (ii = 0; ii < H.Nx; ii++)
     {
-      for(jj=0;jj<NBin3Dtheta;jj++)
+      for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
       {
-        for(kk=0;kk<NBin3Dphi;kk++)
-        {
-          double a = R_ER(ii,jj,kk), b = R_EI(ii,jj,kk);
-          R_ER(ii,jj,kk) = (b * k[ii] + a * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
-          R_EI(ii,jj,kk) = -(a * k[ii] - b * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
-        }
+        double a = R_ER(ii,jj), b = R_EI(ii,jj);
+        R_ER(ii,jj) = (b * k[ii] + a * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
+        R_EI(ii,jj) = -(a * k[ii] - b * mua[ii]) / (pow(k[ii], 2) + pow(mua[ii], 2)) / (double)Nphoton / ElementVolume(ii);
       }
     }
     for (ii = 0; ii < BH.Nx; ii++)
     {
-      for(jj=0;jj<NBin3Dtheta;jj++)
+      for(jj = 0; jj < ang_discr_centroid.Nx; jj++)
       {
-        for(kk=0;kk<NBin3Dphi;kk++)
-        {
-          R_EBR(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
-          R_EBI(ii,jj,kk) /= (double)Nphoton * ElementArea(ii);
-        }
+        R_EBR(ii,jj) /= (double)Nphoton * ElementArea(ii);
+        R_EBI(ii,jj) /= (double)Nphoton * ElementArea(ii);
       }
     }
   }

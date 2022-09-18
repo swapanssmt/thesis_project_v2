@@ -20,7 +20,7 @@
 //   mex MC3Dmex.cpp
 //
 // To compile with OpenMP (multithread) support (from MATLAB prompt):
-//   mex -DUSE_OMP MC3Dmex.cpp CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
+//   mex -DUSE_OMP MC3Dmex.cpp CFLAGS="$CFLAGS -fopenmp" LDFLAGS="$LDFLAGS -fopenmp"
 // Do not use OpenMP version if the MATLAB does not support the compiler used
 
 time_t starting_time;
@@ -102,21 +102,21 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   version_string(infobuf);
   mexPrintf("%s",infobuf);
   
-  if ((nrhs != 20) || ((nlhs != 8) && (nlhs != 9)))
+  if ((nrhs != 19) || ((nlhs != 8) && (nlhs != 9)))
   {
     mexPrintf("nrhs %i nlhs %i", nrhs, nlhs);
-    mexErrMsgTxt("Syntax:\n [vsol, bsol, ebsol, R_vsol, R_bsol, R_ebsol, simulationtime, rnseed, [HN]] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLNormal, BCn, mua, mus, g, n, f, phase0, Nphoton, NBin3Dtheta, NBin3Dphi, disablepbar, rnseed)\n");
+    mexErrMsgTxt("Syntax:\n [vsol, bsol, ebsol, R_vsol, R_bsol, R_ebsol, simulationtime, rnseed, [HN]] = MC3Dmex(H, HN, BH, r, BCType, BCIntensity, BCLightDirectionType, BCLNormal, BCn, mua, mus, g, n, f, phase0, Nphoton, ang_discr_centroid, disablepbar, rnseed)\n");
   }
   mexPrintf("Initializing MC3D...\n");
   
   // Parse input
   Array<int_fast64_t> H, HN, BH;
-  Array<double> r, mua, mus, g, n, phase0;
+  Array<double> r, ang_discr_centroid, mua, mus, g, n, phase0;
   Array<char> BCType, BCLightDirectionType;
   Array<double> BCLNormal, BCn, f, BCIntensity;
   Array<int_fast64_t> Nphoton;
-  Array<int_fast64_t> NBin3Dtheta;
-  Array<int_fast64_t> NBin3Dphi;
+  //Array<int_fast64_t> NBin3Dtheta;
+  //Array<int_fast64_t> NBin3Dphi;
   Array<double> GaussianSigma;
   Array<int_fast64_t> disable_pbar;
   Array<uint_fast64_t> rndseed;
@@ -137,10 +137,11 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   Convert_mxArray(prhs[13], f);
   Convert_mxArray(prhs[14], phase0);
   Convert_mxArray(prhs[15], Nphoton);
-  Convert_mxArray(prhs[16], NBin3Dtheta);
-  Convert_mxArray(prhs[17], NBin3Dphi);
-  Convert_mxArray(prhs[18], disable_pbar);
-  Convert_mxArray(prhs[19], rndseed);
+  Convert_mxArray(prhs[16], ang_discr_centroid);
+  //Convert_mxArray(prhs[16], NBin3Dtheta);
+  //Convert_mxArray(prhs[17], NBin3Dphi);
+  Convert_mxArray(prhs[17], disable_pbar);
+  Convert_mxArray(prhs[18], rndseed);
 
 //  Convert_mxArray(prhs[15], GaussianSigma); 
 
@@ -161,8 +162,9 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   MC.n = n;
   MC.f = f[0];
   MC.Nphoton = Nphoton[0];
-  MC.NBin3Dtheta = NBin3Dtheta[0];
-  MC.NBin3Dphi = NBin3Dphi[0];
+  MC.ang_discr_centroid = ang_discr_centroid;
+  //MC.NBin3Dtheta = NBin3Dtheta[0];
+  //MC.NBin3Dphi = NBin3Dphi[0];
   MC.phase0 = phase0[0];
   //MC.GaussianSigma = GaussianSigma;
   //make negative phase0 positive
@@ -221,9 +223,9 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs)
   Convert_mxArray(&plhs[2], dbsolr, dbsoli, MC.DEBR.Nx, MC.DEBR.Ny);
 
   // ****************modify************************
-  Convert_mxArray(&plhs[3], R_vsolr, R_vsoli, MC.R_ER.Nx, MC.R_ER.Ny,MC.R_ER.Nz);
-  Convert_mxArray(&plhs[4], R_bsolr, R_bsoli, MC.R_EBR.Nx, MC.R_EBR.Ny, MC.R_EBR.Nz);
-  Convert_mxArray(&plhs[5], R_dbsolr, R_dbsoli, MC.R_DEBR.Nx, MC.R_DEBR.Ny,MC.R_DEBR.Nz);
+  Convert_mxArray(&plhs[3], R_vsolr, R_vsoli, MC.R_ER.Nx, MC.R_ER.Ny);
+  Convert_mxArray(&plhs[4], R_bsolr, R_bsoli, MC.R_EBR.Nx, MC.R_EBR.Ny);
+  Convert_mxArray(&plhs[5], R_dbsolr, R_dbsoli, MC.R_DEBR.Nx, MC.R_DEBR.Ny);
   // ****************************************************
 
   plhs[6]=mxCreateDoubleMatrix(1,1,mxREAL); // [AL]
