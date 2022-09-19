@@ -1566,7 +1566,7 @@ void MC3D::PropagatePhoton(Photon *phot)
       double u_z=phot->dir[2]/magn;
       long idx1=0;
       long idx2;
-      double dis_centroid=0.0;
+      double dis_centroid=sqrt(pow((ang_discr_centroid(idx1,0)-u_x),2)+pow((ang_discr_centroid(idx1,1)-u_y),2)+pow((ang_discr_centroid(idx1,2)-u_z),2));
       for(idx2 = 0; idx2 < ang_discr_centroid.Nx; idx2++)
       {
         double dis_centroid1 = sqrt(pow((ang_discr_centroid(idx2,0)-u_x),2)+pow((ang_discr_centroid(idx2,1)-u_y),2)+pow((ang_discr_centroid(idx2,2)-u_z),2));
